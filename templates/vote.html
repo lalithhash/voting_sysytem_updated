@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h3>Voting Booth</h3>
+    </div>
+    <div class="card-body">
+        <form id="voteForm" method="POST" action="{{ url_for('vote') }}">
+            {% for post in posts %}
+            <div class="card mb-4">
+                <div class="card-header">{{ post.title }} ({{ post.voting_type }})</div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        {% for candidate in post.candidates %}
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        {% if post.voting_type == 'single' %}
+                                            <input class="form-check-input" type="radio" 
+                                                   name="post_{{ post.id }}" 
+                                                   id="candidate_{{ candidate.id }}" 
+                                                   value="{{ candidate.id }}" required>
+                                        {% else %}
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="post_{{ post.id }}" 
+                                                   id="candidate_{{ candidate.id }}" 
+                                                   value="{{ candidate.id }}">
+                                        {% endif %}
+                                        <label class="form-check-label" for="candidate_{{ candidate.id }}">
+                                            <h5>{{ candidate.name }}</h5>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-success btn-lg">Submit Votes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Overlay for pausing the page -->
+<div id="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; pointer-events: auto;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 2rem; text-align: center;">
+        <p class="text-danger">
+            Please wait for <span id="countdown">30</span> seconds... 
+            In case you try to go back to any page, your vote will not count.
+        </p>
+            </div>
+</div>
+
+<script>
+    // Function to play beep sound
+    function playBeep() {
+        const audio = new Audio("{{ url_for('static', filename='beep.mp3') }}");
+        audio.play().catch(error => {
+            console.error("Audio playback failed:", error);
+        });
+    }
+
+    // Handle form submission
+    function handleSubmit(event) {
+        event.preventDefault(); // Prevent immediate form submission
+
+        // Play the beep sound
+        playBeep();
+
+        // Disable interactions and show overlay
+        const overlay = document.getElementById('overlay');
+        overlay.style.display = 'block';
+        overlay.style.pointerEvents = 'auto'; // Block interactions
+
+        // Disable the back button and page refresh
+        history.pushState(null, document.title, location.href);
+        window.addEventListener('popstate', function (event) {
+            history.pushState(null, document.title, location.href);
+        });
+
+        // Warn the user if they try to refresh or leave the page
+        const handleBeforeUnload = function (e) {
+            e.preventDefault();
+            e.returnValue = ''; // Required for Chrome
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Continuously push the current URL to the history stack
+        const intervalId = setInterval(() => {
+            history.pushState(null, document.title, location.href);
+        }, 1000); // Push every second
+
+        // Start countdown timer
+        let countdown = 30;
+        const countdownElement = document.getElementById('countdown');
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                clearInterval(intervalId); // Stop pushing to history
+                overlay.style.display = 'none'; // Hide overlay
+                overlay.style.pointerEvents = 'none'; // Re-enable interactions
+                window.removeEventListener('beforeunload', handleBeforeUnload); // Remove the refresh warning
+
+                // Submit the form
+                console.log("Submitting form...");
+                document.getElementById('voteForm').submit();
+            }
+        }, 1000); // Update every second
+
+        return false; // Prevent the form from submitting immediately
+    }
+
+    // Attach the handleSubmit function to the form's submit event
+    document.getElementById('voteForm').addEventListener('submit', handleSubmit);
+</script>
+{% endblock %}

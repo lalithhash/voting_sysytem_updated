@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h3>Admin Dashboard</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Create New Post</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/create-post">
+                            <div class="mb-3">
+                                <label class="form-label">Post Title</label>
+                                <input type="text" name="post_title" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Voting Type</label>
+                                <select name="voting_type" class="form-control" required>
+                                    <option value="single">Single Voting</option>
+                                    <option value="multiple">Multiple Voting</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Candidates (one per line)</label>
+                                <textarea name="candidates" class="form-control" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create Post</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Existing Posts</h4>
+                    </div>
+                    <div class="card-body">
+                        {% for post in posts %}
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                {{ post.title }} ({{ post.voting_type }})
+                                <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
+                            <div class="card-body">
+                                <h5>Candidates:</h5>
+                                <ul class="list-group">
+                                    {% for candidate in post.candidates %}
+                                    <li class="list-group-item">{{ candidate.name }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -101,5 +101,5 @@ python app.py
 
 ---
 
-<p align="center">💡 Developed by <b>Your Name</b></p>
+<p align="center">💡 Developed by <b>LALITH</b></p>
 

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3>Admin Settings</h3>
+            </div>
+            <div class="card-body">
+                <!-- Update Credentials Form -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Update Admin Credentials</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('admin_settings') }}">
+                            <input type="hidden" name="action" value="update_credentials">
+                            <div class="mb-3">
+                                <label class="form-label">Current Username</label>
+                                <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">New Username (leave blank to keep current)</label>
+                                <input type="text" name="new_username" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" name="current_password" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">New Password (leave blank to keep current)</label>
+                                <input type="password" name="new_password" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Confirm New Password</label>
+                                <input type="password" name="confirm_password" class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Credentials</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Update Flash Message Timer Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Flash Message Timer Settings</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('admin_settings') }}">
+                            <input type="hidden" name="action" value="update_timer">
+                            <div class="mb-3">
+                                <label class="form-label">Flash Message Timer (seconds)</label>
+                                <input type="number" name="flash_timer" class="form-control" 
+                                       value="{{ settings.flash_message_timer }}" min="5" max="300" required>
+                                <small class="form-text text-muted">
+                                    This controls how long users must wait before submitting their vote.
+                                    Value must be between 5 and 300 seconds.
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Timer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mb-4">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

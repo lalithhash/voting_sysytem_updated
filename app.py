@@ -26,6 +26,11 @@ class Candidate(db.Model):
     votes = db.Column(db.Integer, default=0)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
 
+# New model for system settings
+class Settings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    flash_message_timer = db.Column(db.Integer, default=30)  # Default timer is 30 seconds
+
 # Create tables and admin user
 with app.app_context():
     db.create_all()
@@ -35,6 +40,12 @@ with app.app_context():
             password_hash=generate_password_hash("subhash")
         )
         db.session.add(admin_user)
+        db.session.commit()
+    
+    # Initialize settings if not already present
+    if not Settings.query.first():
+        default_settings = Settings(flash_message_timer=30)
+        db.session.add(default_settings)
         db.session.commit()
 
 # Routes
@@ -51,6 +62,7 @@ def login():
         
         if user and check_password_hash(user.password_hash, password):
             session['logged_in'] = True
+            session['user_id'] = user.id
             flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         else:
@@ -60,6 +72,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('user_id', None)
     flash('You have been logged out.', 'info')
     return redirect(url_for('home'))
 
@@ -111,6 +124,10 @@ def delete_post(post_id):
 
 @app.route('/vote', methods=['GET', 'POST'])
 def vote():
+    # Get the current timer setting
+    settings = Settings.query.first()
+    flash_timer = settings.flash_message_timer if settings else 30
+    
     if request.method == 'POST':
         for post in Post.query.all():
             if post.voting_type == 'single':
@@ -128,7 +145,7 @@ def vote():
         return redirect(url_for('home'))
     
     posts = Post.query.all()
-    return render_template('vote.html', posts=posts)
+    return render_template('vote.html', posts=posts, flash_timer=flash_timer)
 
 @app.route('/results')
 def results():
@@ -138,6 +155,66 @@ def results():
     
     posts = Post.query.all()
     return render_template('results.html', posts=posts)
+
+# New route for admin settings
+@app.route('/admin/settings', methods=['GET', 'POST'])
+def admin_settings():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    # Get current user and settings
+    user = User.query.get(session.get('user_id'))
+    settings = Settings.query.first()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'update_credentials':
+            new_username = request.form.get('new_username')
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            
+            # Validate current password
+            if not check_password_hash(user.password_hash, current_password):
+                flash('Current password is incorrect!', 'danger')
+                return redirect(url_for('admin_settings'))
+            
+            # Update username if provided
+            if new_username and new_username != user.username:
+                # Check if username already exists
+                if User.query.filter_by(username=new_username).first() and new_username != user.username:
+                    flash('Username already exists!', 'danger')
+                    return redirect(url_for('admin_settings'))
+                user.username = new_username
+            
+            # Update password if provided
+            if new_password:
+                if new_password != confirm_password:
+                    flash('New passwords do not match!', 'danger')
+                    return redirect(url_for('admin_settings'))
+                user.password_hash = generate_password_hash(new_password)
+            
+            db.session.commit()
+            flash('Credentials updated successfully!', 'success')
+        
+        elif action == 'update_timer':
+            timer = request.form.get('flash_timer')
+            try:
+                timer = int(timer)
+                if timer < 5 or timer > 300:
+                    flash('Timer must be between 5 and 300 seconds!', 'danger')
+                    return redirect(url_for('admin_settings'))
+                
+                settings.flash_message_timer = timer
+                db.session.commit()
+                flash('Timer updated successfully!', 'success')
+            except ValueError:
+                flash('Timer must be a valid number!', 'danger')
+        
+        return redirect(url_for('admin_settings'))
+    
+    return render_template('admin_settings.html', user=user, settings=settings)
 
 if __name__ == '__main__':
     app.run(debug=True)

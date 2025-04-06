@@ -6,7 +6,8 @@
         <h3>Voting Booth</h3>
     </div>
     <div class="card-body">
-        <form id="voteForm" method="POST" action="{{ url_for('vote') }}">
+        <!-- Voting Form - Step 1: Select Candidates -->
+        <form id="voteForm" method="POST" action="{{ url_for('vote') }}" style="display: block;">
             {% for post in posts %}
             <div class="card mb-4">
                 <div class="card-header">{{ post.title }} ({{ post.voting_type }})</div>
@@ -18,18 +19,25 @@
                                 <div class="card-body">
                                     <div class="form-check">
                                         {% if post.voting_type == 'single' %}
-                                            <input class="form-check-input" type="radio" 
+                                            <input class="form-check-input vote-selection" type="radio" 
                                                    name="post_{{ post.id }}" 
                                                    id="candidate_{{ candidate.id }}" 
-                                                   value="{{ candidate.id }}" required>
+                                                   value="{{ candidate.id }}"
+                                                   data-post-title="{{ post.title }}"
+                                                   data-candidate-name="{{ candidate.name }}"
+                                                   data-post-id="{{ post.id }}"
+                                                   required>
                                         {% else %}
-                                            <input class="form-check-input" type="checkbox" 
+                                            <input class="form-check-input vote-selection" type="checkbox" 
                                                    name="post_{{ post.id }}" 
                                                    id="candidate_{{ candidate.id }}" 
-                                                   value="{{ candidate.id }}">
+                                                   value="{{ candidate.id }}"
+                                                   data-post-title="{{ post.title }}"
+                                                   data-candidate-name="{{ candidate.name }}"
+                                                   data-post-id="{{ post.id }}">
                                         {% endif %}
-                                        <label class="form-check-label" for="candidate_{{ candidate.id }}">
-                                            <h5>{{ candidate.name }}</h5>
+                                        <label class="form-check-label candidate-name" for="candidate_{{ candidate.id }}">
+                                            {{ candidate.name }}
                                         </label>
                                     </div>
                                 </div>
@@ -41,9 +49,30 @@
             </div>
             {% endfor %}
             <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-success btn-lg">Submit Votes</button>
+                <button type="button" id="previewButton" class="btn btn-info btn-lg mb-3">Preview Selections</button>
+                <button type="submit" id="submitButton" class="btn btn-success btn-lg">Submit Votes</button>
             </div>
         </form>
+        
+        <!-- Preview Mode - Step 2: Confirm Selections -->
+        <div id="previewContainer" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4>Preview Your Selections</h4>
+                </div>
+                <div class="card-body">
+                    <div id="selectionSummary"></div>
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Please verify your selections before proceeding. Once submitted, your vote cannot be changed.
+                    </div>
+                    <div class="d-flex justify-content-between mt-4">
+                        <button id="backToVoting" class="btn btn-secondary">Back to Voting</button>
+                        <button id="confirmVote" class="btn btn-success">Confirm and Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -54,9 +83,12 @@
             Please wait for <span id="countdown">{{ flash_timer }}</span> seconds... 
             In case you try to go back to any page, your vote will not count.
         </p>
-            </div>
+    </div>
 </div>
 
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
     // Function to play beep sound
     function playBeep() {
@@ -122,7 +154,78 @@
         return false; // Prevent the form from submitting immediately
     }
 
-    // Attach the handleSubmit function to the form's submit event
-    document.getElementById('voteForm').addEventListener('submit', handleSubmit);
+    // Function to generate preview of selections
+    function generateSelectionPreview() {
+        const selectionSummary = document.getElementById('selectionSummary');
+        selectionSummary.innerHTML = ''; // Clear existing content
+        
+        // Group selections by post
+        const postSelections = {};
+        document.querySelectorAll('.vote-selection:checked').forEach(input => {
+            const postId = input.dataset.postId;
+            const postTitle = input.dataset.postTitle;
+            const candidateName = input.dataset.candidateName;
+            
+            if (!postSelections[postId]) {
+                postSelections[postId] = {
+                    title: postTitle,
+                    candidates: []
+                };
+            }
+            
+            postSelections[postId].candidates.push(candidateName);
+        });
+        
+        // Check if any selections were made
+        if (Object.keys(postSelections).length === 0) {
+            selectionSummary.innerHTML = '<div class="alert alert-danger">You have not made any selections.</div>';
+            return false;
+        }
+        
+        // Create summary HTML
+        let html = '<div class="list-group">';
+        for (const postId in postSelections) {
+            const post = postSelections[postId];
+            html += `<div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">${post.title}</h5>
+                        </div>
+                        <p class="mb-1"><strong>Selected:</strong> ${post.candidates.join(', ')}</p>
+                    </div>`;
+        }
+        html += '</div>';
+        
+        selectionSummary.innerHTML = html;
+        return true;
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Preview button handler
+        document.getElementById('previewButton').addEventListener('click', function() {
+            if (generateSelectionPreview()) {
+                document.getElementById('voteForm').style.display = 'none';
+                document.getElementById('previewContainer').style.display = 'block';
+            }
+        });
+        
+        // Back to voting handler
+        document.getElementById('backToVoting').addEventListener('click', function() {
+            document.getElementById('previewContainer').style.display = 'none';
+            document.getElementById('voteForm').style.display = 'block';
+        });
+        
+        // Confirm vote handler
+        document.getElementById('confirmVote').addEventListener('click', handleSubmit);
+        
+        // Remove the direct form submission to ensure preview step
+        document.getElementById('submitButton').addEventListener('click', function(event) {
+            event.preventDefault();
+            if (generateSelectionPreview()) {
+                document.getElementById('voteForm').style.display = 'none';
+                document.getElementById('previewContainer').style.display = 'block';
+            }
+        });
+    });
 </script>
 {% endblock %}

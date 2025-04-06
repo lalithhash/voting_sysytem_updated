@@ -1,12 +1,35 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///voting.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'your-secret-key-123'  # Change this for production
 db = SQLAlchemy(app)
+
+# Ensure static folders exist
+def ensure_static_folders():
+    static_folder = os.path.join(app.root_path, 'static')
+    logo_folder = os.path.join(static_folder, 'logo')
+    
+    # Create folders if they don't exist
+    if not os.path.exists(static_folder):
+        os.makedirs(static_folder)
+    if not os.path.exists(logo_folder):
+        os.makedirs(logo_folder)
+    
+    # Create a basic beep sound file placeholder if it doesn't exist
+    beep_file = os.path.join(static_folder, 'beep.mp3')
+    if not os.path.exists(beep_file):
+        # Create an empty file as a placeholder (you should replace with a real audio file)
+        with open(beep_file, 'w') as f:
+            f.write('')
+    
+    # Log where to place logo files
+    print(f"Place MIMS logo at: {os.path.join(logo_folder, 'mims_logo.png')}")
+    print(f"Place Agasthyans logo at: {os.path.join(logo_folder, 'agasthyans_logo.png')}")
 
 # Database Models
 class User(db.Model):
@@ -33,6 +56,7 @@ class Settings(db.Model):
 
 # Create tables and admin user
 with app.app_context():
+    ensure_static_folders()
     db.create_all()
     if not User.query.filter_by(username="SUBHASH@GS").first():
         admin_user = User(

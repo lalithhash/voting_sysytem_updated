@@ -49,6 +49,13 @@
             font-weight: 700;
             font-size: 1.5rem;
             letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo {
+            height: 50px;
+            margin-right: 15px;
         }
         
         .nav-link {
@@ -128,13 +135,38 @@
             border-color: var(--secondary-color);
             box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
         }
+        
+        /* Candidate font size adjustment */
+        .candidate-name {
+            font-size: 0.95rem;
+        }
+        
+        /* Agasthyans logo styling */
+        .agasthyans-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        
+        .agasthyans-logo {
+            height: 60px;
+            margin-bottom: 5px;
+        }
+        
+        .agasthyans-text {
+            font-weight: 600;
+            color: #f8f9fa;
+            font-size: 0.9rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-vote-yea me-2"></i>
+                <img src="{{ url_for('static', filename='logo/mims_logo.png') }}" alt="MIMS Logo" class="navbar-logo">
                 MIMS VOTING SYSTEM
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -190,9 +222,20 @@
     </div>
 
     <footer class="mt-5">
-        <div class="container text-center">
-            <p>© 2025 MIMS VOTING SYSTEM | Developed by LALITH</p>
-            <p class="text-muted">A secure and efficient election management system</p>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <p>© 2025 MIMS VOTING SYSTEM | Developed by LALITH</p>
+                    <p class="text-muted">A secure and efficient election management system</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="agasthyans-container">
+                        <img src="{{ url_for('static', filename='logo/agasthyans_logo.png') }}" alt="Agasthyans Logo" class="agasthyans-logo">
+                        <div class="agasthyans-text">AGASTHYANS</div>
+                    </div>
+                </div>
+                <div class="col-md-4"></div>
+            </div>
         </div>
     </footer>
 
@@ -207,5 +250,6 @@
             });
         });
     </script>
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>
